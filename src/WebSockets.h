@@ -25,6 +25,8 @@
 #ifndef WEBSOCKETS_H_
 #define WEBSOCKETS_H_
 
+#define DEBUG_WEBSOCKETS(...) Serial.printf( __VA_ARGS__ )
+
 #ifdef STM32_DEVICE
 #include <application.h>
 #define bit(b) (1UL << (b))    // Taken directly from Arduino.h

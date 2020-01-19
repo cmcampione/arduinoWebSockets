@@ -25,6 +25,15 @@ void SocketIOclient::begin(String host, uint16_t port, String url, String protoc
     WebSocketsClient::enableHeartbeat(60 * 1000, 90 * 1000, 5);
 }
 
+#if defined(HAS_SSL)
+
+void SocketIOclient::beginSocketIOSSLWithCA(const char * host, uint16_t port, const char * url, const char * CA_cert, const char * protocol) {
+    WebSocketsClient::beginSocketIOSSLWithCA(host, port, url, CA_cert, protocol);
+	WebSocketsClient::enableHeartbeat(60 * 1000, 90 * 1000, 5);
+
+}
+#endif
+
 /**
  * set callback function
  * @param cbEvent SocketIOclientEvent
