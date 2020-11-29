@@ -39,7 +39,14 @@ extern "C" {
 #ifdef ESP8266
 #include <Hash.h>
 #elif defined(ESP32)
+#include <esp_system.h>
+
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include <esp32/sha.h>
+#else
 #include <hwcrypto/sha.h>
+#endif
+
 #else
 
 extern "C" {
@@ -494,7 +501,7 @@ void WebSockets::handleWebsocketPayloadCb(WSclient_t * client, bool ok, uint8_t 
                     reasonCode = payload[0] << 8 | payload[1];
                 }
 #endif
-                DEBUG_WEBSOCKETS("[WS][%d][handleWebsocket] get ask for close. Code: %d", client->num, reasonCode);
+                DEBUG_WEBSOCKETS("[WS][%d][handleWebsocket] get ask for close. Code: %d\n", client->num, reasonCode);
                 if(header->payloadLen > 2) {
                     DEBUG_WEBSOCKETS(" (%s)\n", (payload + 2));
                 } else {
@@ -503,6 +510,7 @@ void WebSockets::handleWebsocketPayloadCb(WSclient_t * client, bool ok, uint8_t 
                 clientDisconnect(client, 1000);
             } break;
             default:
+                DEBUG_WEBSOCKETS("[WS][%d][handleWebsocket] got unknown opcode: %d\n", client->num, header->opCode);
                 clientDisconnect(client, 1002);
                 break;
         }
@@ -623,12 +631,7 @@ bool WebSockets::readCb(WSclient_t * client, uint8_t * out, size_t n, WSreadWait
         }
 
         if(!client->tcp->available()) {
-#if(WEBSOCKETS_NETWORK_TYPE == NETWORK_ESP8266)
-            delay(0);
-#endif
-#if(WEBSOCKETS_NETWORK_TYPE == NETWORK_ESP32)
-            yield();
-#endif
+            WEBSOCKETS_YIELD_MORE();
             continue;
         }
 
@@ -641,13 +644,14 @@ bool WebSockets::readCb(WSclient_t * client, uint8_t * out, size_t n, WSreadWait
         } else {
             //DEBUG_WEBSOCKETS("Receive %d left %d!\n", len, n);
         }
-#if(WEBSOCKETS_NETWORK_TYPE == NETWORK_ESP8266)
-        delay(0);
-#endif
+        if(n > 0) {
+            WEBSOCKETS_YIELD();
+        }
     }
     if(cb) {
         cb(client, true);
     }
+    WEBSOCKETS_YIELD();
 #endif
     return true;
 }
@@ -692,12 +696,13 @@ size_t WebSockets::write(WSclient_t * client, uint8_t * out, size_t n) {
             total += len;
             //DEBUG_WEBSOCKETS("write %d left %d!\n", len, n);
         } else {
-            //DEBUG_WEBSOCKETS("write %d failed left %d!\n", len, n);
+            DEBUG_WEBSOCKETS("WS write %d failed left %d!\n", len, n);
         }
-#if(WEBSOCKETS_NETWORK_TYPE == NETWORK_ESP8266)
-        delay(0);
-#endif
+        if(n > 0) {
+            WEBSOCKETS_YIELD();
+        }
     }
+    WEBSOCKETS_YIELD();
     return total;
 }
 

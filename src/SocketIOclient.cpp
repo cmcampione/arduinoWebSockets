@@ -24,16 +24,41 @@ void SocketIOclient::begin(String host, uint16_t port, String url, String protoc
     WebSocketsClient::beginSocketIO(host, port, url, protocol);
     WebSocketsClient::enableHeartbeat(60 * 1000, 90 * 1000, 5);
 }
-
 #if defined(HAS_SSL)
+void SocketIOclient::beginSSL(const char * host, uint16_t port, const char * url, const char * protocol) {
+    WebSocketsClient::beginSocketIOSSL(host, port, url, protocol);
+    WebSocketsClient::enableHeartbeat(60 * 1000, 90 * 1000, 5);
+}
 
+void SocketIOclient::beginSSL(String host, uint16_t port, String url, String protocol) {
+    WebSocketsClient::beginSocketIOSSL(host, port, url, protocol);
+    WebSocketsClient::enableHeartbeat(60 * 1000, 90 * 1000, 5);
+}
 void SocketIOclient::beginSocketIOSSLWithCA(const char * host, uint16_t port, const char * url, const char * CA_cert, const char * protocol) {
     WebSocketsClient::beginSocketIOSSLWithCA(host, port, url, CA_cert, protocol);
 	WebSocketsClient::enableHeartbeat(60 * 1000, 90 * 1000, 5);
-
 }
-#endif
+#if !defined(SSL_AXTLS)
+void SocketIOclient::beginSSLWithCA(const char * host, uint16_t port, const char * url, const char * CA_cert, const char * protocol) {
+    WebSocketsClient::beginSocketIOSSLWithCA(host, port, url, CA_cert, protocol);
+    WebSocketsClient::enableHeartbeat(60 * 1000, 90 * 1000, 5);
+}
 
+void SocketIOclient::beginSSLWithCA(const char * host, uint16_t port, const char * url, BearSSL::X509List * CA_cert, const char * protocol) {
+    WebSocketsClient::beginSocketIOSSLWithCA(host, port, url, CA_cert, protocol);
+    WebSocketsClient::enableHeartbeat(60 * 1000, 90 * 1000, 5);
+}
+
+void SocketIOclient::setSSLClientCertKey(const char * clientCert, const char * clientPrivateKey) {
+    WebSocketsClient::setSSLClientCertKey(clientCert, clientPrivateKey);
+}
+
+void SocketIOclient::setSSLClientCertKey(BearSSL::X509List * clientCert, BearSSL::PrivateKey * clientPrivateKey) {
+    WebSocketsClient::setSSLClientCertKey(clientCert, clientPrivateKey);
+}
+
+#endif
+#endif
 /**
  * set callback function
  * @param cbEvent SocketIOclientEvent
@@ -60,7 +85,7 @@ bool SocketIOclient::send(socketIOmessageType_t type, uint8_t * payload, size_t 
     if(length == 0) {
         length = strlen((const char *)payload);
     }
-    if(clientIsConnected(&_client)) {
+    if(clientIsConnected(&_client) && _client.status == WSC_CONNECTED) {
         if(!headerToPayload) {
             // webSocket Header
             ret = WebSocketsClient::sendFrameHeader(&_client, WSop_text, length + 2, true);
@@ -144,6 +169,7 @@ void SocketIOclient::handleCbEvent(WStype_t type, uint8_t * payload, size_t leng
             DEBUG_WEBSOCKETS("[wsIOc] Connected to url: %s\n", payload);
             // send message to server when Connected
             // Engine.io upgrade confirmation message (required)
+            WebSocketsClient::sendTXT("2probe");
             WebSocketsClient::sendTXT(eIOtype_UPGRADE);
             runIOCbEvent(sIOtype_CONNECT, payload, length);
         } break;
@@ -174,6 +200,8 @@ void SocketIOclient::handleCbEvent(WStype_t type, uint8_t * payload, size_t leng
                             DEBUG_WEBSOCKETS("[wsIOc] get event (%d): %s\n", lData, data);
                             break;
                         case sIOtype_CONNECT:
+                            DEBUG_WEBSOCKETS("[wsIOc] connected (%d): %s\n", lData, data);
+                            return;
                         case sIOtype_DISCONNECT:
                         case sIOtype_ACK:
                         case sIOtype_ERROR:

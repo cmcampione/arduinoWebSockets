@@ -30,6 +30,9 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t * payload, size_t length)
             break;
         case sIOtype_CONNECT:
             USE_SERIAL.printf("[IOc] Connected to url: %s\n", payload);
+
+            // join default namespace (no auto join in Socket.IO V3)
+            socketIO.send(sIOtype_CONNECT, "/");
             break;
         case sIOtype_EVENT:
         {
@@ -147,7 +150,7 @@ void loop() {
 
         // add payload (parameters) for the event
         JsonObject param1 = array.createNestedObject();
-        param1["now"] = now;
+        param1["now"] = (uint32_t) now;
 
         // JSON to String (serializion)
         String output;
