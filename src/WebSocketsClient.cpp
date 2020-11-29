@@ -149,8 +149,10 @@ void WebSocketsClient::beginSocketIOSSLWithCA(const char * host, uint16_t port, 
  */
 void WebSocketsClient::loop(void) {
     if(!clientIsConnected(&_client)) {
+        DEBUG_WEBSOCKETS("[WS-Client] in loop client is disconnected\n");
         // do not flood the server
         if((millis() - _lastConnectionFail) < _reconnectInterval) {
+            DEBUG_WEBSOCKETS("[WS-Client] do not flood the server\n");
             return;
         }
 
@@ -195,9 +197,11 @@ void WebSocketsClient::loop(void) {
 #else
         if(_client.tcp->connect(_host.c_str(), _port)) {
 #endif
+            DEBUG_WEBSOCKETS("[WS-Client] in loop connectedCb\n");
             connectedCb();
             _lastConnectionFail = 0;
         } else {
+            DEBUG_WEBSOCKETS("[WS-Client] in loop connectFailedCb\n");
             connectFailedCb();
             _lastConnectionFail = millis();
         }
@@ -455,6 +459,7 @@ void WebSocketsClient::clientDisconnect(WSclient_t * client) {
  */
 bool WebSocketsClient::clientIsConnected(WSclient_t * client) {
     if(!client->tcp) {
+        DEBUG_WEBSOCKETS("[WS-Client] in clientIsConnected !client->tcp.\n");
         return false;
     }
 
@@ -464,6 +469,7 @@ bool WebSocketsClient::clientIsConnected(WSclient_t * client) {
         }
     } else {
         // client lost
+        DEBUG_WEBSOCKETS("[WS-Client] in clientIsConnected client lost.\n");
         if(client->status != WSC_NOT_CONNECTED) {
             DEBUG_WEBSOCKETS("[WS-Client] connection lost.\n");
             // do cleanup
@@ -472,6 +478,7 @@ bool WebSocketsClient::clientIsConnected(WSclient_t * client) {
     }
 
     if(client->tcp) {
+        DEBUG_WEBSOCKETS("[WS-Client] in clientIsConnected do cleanup.\n");
         // do cleanup
         clientDisconnect(client);
     }

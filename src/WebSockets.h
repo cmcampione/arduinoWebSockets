@@ -25,7 +25,7 @@
 #ifndef WEBSOCKETS_H_
 #define WEBSOCKETS_H_
 
-#define DEBUG_ESP_PORT	Serial
+//#define DEBUG_ESP_PORT	Serial
 
 #ifdef STM32_DEVICE
 #include <application.h>
