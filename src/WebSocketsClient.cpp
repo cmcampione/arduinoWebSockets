@@ -86,6 +86,8 @@ void WebSocketsClient::begin(const char * host, uint16_t port, const char * url,
 
     _lastConnectionFail = 0;
     _lastHeaderSent     = 0;
+
+    DEBUG_WEBSOCKETS("[WS-Client] Websocket Version: " WEBSOCKETS_VERSION "\n");
 }
 
 void WebSocketsClient::begin(String host, uint16_t port, String url, String protocol) {
@@ -943,6 +945,9 @@ void WebSocketsClient::handleHBPing() {
         if(sendPing()) {
             _client.lastPing     = millis();
             _client.pongReceived = false;
+        } else {
+            DEBUG_WEBSOCKETS("[WS-Client] sending HB ping failed\n");
+            WebSockets::clientDisconnect(&_client, 1000);
         }
     }
 }
